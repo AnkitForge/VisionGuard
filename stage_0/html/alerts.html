@@ -27,22 +27,22 @@
 
         <!-- Alert Statistics -->
         <section class="alert-stats">
-            <h3>Alert Statistics</h3>
+            <h3>Alert Summary</h3>
             <div class="stats-grid">
                 <div class="stat-card">
                     <h4>Total Alerts</h4>
                     <p class="stat-number">0</p>
                 </div>
                 <div class="stat-card">
-                    <h4>Critical Incidents</h4>
+                    <h4>Critical Issues</h4>
                     <p class="stat-number">0</p>
                 </div>
                 <div class="stat-card">
-                    <h4>Incidents Today</h4>
+                    <h4>Today</h4>
                     <p class="stat-number">0</p>
                 </div>
                 <div class="stat-card">
-                    <h4>Resolved Alerts</h4>
+                    <h4>Resolved</h4>
                     <p class="stat-number">0</p>
                 </div>
             </div>
@@ -50,19 +50,19 @@
 
         <!-- Filter Options -->
         <section class="filter-section">
-            <h3>Filter Alerts</h3>
+            <h3>Search & Filter Alerts</h3>
             <div class="filter-group">
                 <input type="date" class="filter-input" placeholder="From Date">
                 <input type="date" class="filter-input" placeholder="To Date">
                 <select class="filter-input">
-                    <option value="">All Severities</option>
-                    <option value="critical">Critical</option>
-                    <option value="high">High</option>
-                    <option value="medium">Medium</option>
-                    <option value="low">Low</option>
+                    <option value="">All Severity Levels</option>
+                    <option value="critical">🔴 Critical</option>
+                    <option value="high">🟠 High</option>
+                    <option value="medium">🟡 Medium</option>
+                    <option value="low">🟢 Low</option>
                 </select>
                 <select class="filter-input">
-                    <option value="">All Statuses</option>
+                    <option value="">All Status</option>
                     <option value="new">New</option>
                     <option value="in-progress">In Progress</option>
                     <option value="resolved">Resolved</option>
@@ -77,18 +77,17 @@
             <table class="alerts-table">
                 <thead>
                     <tr>
-                        <th>Timestamp</th>
-                        <th>Camera</th>
-                        <th>Incident Type</th>
+                        <th>Time</th>
+                        <th>Location</th>
+                        <th>Type</th>
                         <th>Severity</th>
                         <th>Status</th>
                         <th>Evidence</th>
-                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="7" class="no-data">No alerts recorded. System awaiting first incident detection.</td>
+                        <td colspan="6" class="no-data">No alerts recorded. System monitoring active.</td>
                     </tr>
                 </tbody>
             </table>
@@ -98,26 +97,15 @@
         <section class="incident-details">
             <h3>Incident Analysis</h3>
             <div class="details-panel">
-                <p>Select an alert from the table above to view detailed analysis and video evidence.</p>
                 <div class="empty-state">
-                    <p>📋 No incident selected</p>
+                    <p>📋 Select an alert to view detailed analysis</p>
                 </div>
             </div>
         </section>
 
-        <!-- Video Evidence -->
-        <section class="evidence-section">
-            <h3>Evidence Management</h3>
-            <div class="evidence-grid">
-                <div class="evidence-card">
-                    <p>No video evidence available</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- Alert Actions -->
+        <!-- Management -->
         <section class="controls-section">
-            <h3>Management Actions</h3>
+            <h3>Alert Management</h3>
             <div class="btn-group">
                 <button class="btn btn-primary" onclick="downloadReport()">📥 Download Report</button>
                 <button class="btn btn-secondary" onclick="exportData()">📊 Export Data</button>

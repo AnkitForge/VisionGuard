@@ -25,97 +25,86 @@
     <div class="container">
         <h2>Live Monitoring Dashboard</h2>
 
-        <!-- Camera Feeds -->
-        <section class="camera-section">
-            <h3>CCTV Camera Feeds</h3>
-            <div class="camera-grid">
-                <div class="camera-card">
-                    <div class="camera-placeholder">
-                        <p>📹 Camera 1</p>
-                        <p class="placeholder-text">Not Connected</p>
-                    </div>
-                    <div class="camera-info">
-                        <p><strong>Status:</strong> <span class="status-offline">OFFLINE</span></p>
-                        <p><strong>Resolution:</strong> 1920x1080</p>
-                        <p><strong>FPS:</strong> 30</p>
-                    </div>
-                </div>
-
-                <div class="camera-card">
-                    <div class="camera-placeholder">
-                        <p>📹 Camera 2</p>
-                        <p class="placeholder-text">Not Connected</p>
-                    </div>
-                    <div class="camera-info">
-                        <p><strong>Status:</strong> <span class="status-offline">OFFLINE</span></p>
-                        <p><strong>Resolution:</strong> 1920x1080</p>
-                        <p><strong>FPS:</strong> 30</p>
-                    </div>
-                </div>
-
-                <div class="camera-card">
-                    <div class="camera-placeholder">
-                        <p>📹 Camera 3</p>
-                        <p class="placeholder-text">Not Connected</p>
-                    </div>
-                    <div class="camera-info">
-                        <p><strong>Status:</strong> <span class="status-offline">OFFLINE</span></p>
-                        <p><strong>Resolution:</strong> 1920x1080</p>
-                        <p><strong>FPS:</strong> 30</p>
-                    </div>
-                </div>
-
-                <div class="camera-card">
-                    <div class="camera-placeholder">
-                        <p>📹 Camera 4</p>
-                        <p class="placeholder-text">Not Connected</p>
-                    </div>
-                    <div class="camera-info">
-                        <p><strong>Status:</strong> <span class="status-offline">OFFLINE</span></p>
-                        <p><strong>Resolution:</strong> 1920x1080</p>
-                        <p><strong>FPS:</strong> 30</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Real-time Statistics -->
-        <section class="stats-section">
-            <h3>Real-Time Statistics</h3>
+        <!-- System Status Summary -->
+        <section class="alert-stats">
+            <h3>System Overview</h3>
             <div class="stats-grid">
                 <div class="stat-card">
-                    <h4>People Detected</h4>
+                    <h4>Connected Cameras</h4>
                     <p class="stat-number">0</p>
                 </div>
                 <div class="stat-card">
-                    <h4>Suspicious Activities</h4>
+                    <h4>Active Monitoring</h4>
                     <p class="stat-number">0</p>
                 </div>
                 <div class="stat-card">
-                    <h4>Alerts Triggered</h4>
+                    <h4>Alerts Today</h4>
                     <p class="stat-number">0</p>
                 </div>
                 <div class="stat-card">
-                    <h4>System Uptime</h4>
+                    <h4>Uptime</h4>
                     <p class="stat-number">0h</p>
                 </div>
             </div>
         </section>
 
-        <!-- Recent Activity Log -->
-        <section class="activity-section">
-            <h3>Recent Activity</h3>
-            <div class="activity-log">
-                <p class="no-activity">No activity recorded. System awaiting configuration.</p>
+        <!-- Camera Feeds -->
+        <section class="camera-section">
+            <h3>CCTV Camera Feeds</h3>
+            <p style="color: #666; margin-bottom: 1.5rem;">Select cameras to display live feeds and monitor activity</p>
+            <div class="camera-grid">
+                <div class="camera-card">
+                    <div class="camera-placeholder">📹</div>
+                    <div class="camera-info">
+                        <p><strong>Location:</strong> Entrance</p>
+                        <p><strong>Status:</strong> <span class="status-offline">OFFLINE</span></p>
+                        <p><strong>Resolution:</strong> 1920x1080</p>
+                    </div>
+                </div>
+
+                <div class="camera-card">
+                    <div class="camera-placeholder">📹</div>
+                    <div class="camera-info">
+                        <p><strong>Location:</strong> Main Aisle</p>
+                        <p><strong>Status:</strong> <span class="status-offline">OFFLINE</span></p>
+                        <p><strong>Resolution:</strong> 1920x1080</p>
+                    </div>
+                </div>
+
+                <div class="camera-card">
+                    <div class="camera-placeholder">📹</div>
+                    <div class="camera-info">
+                        <p><strong>Location:</strong> Checkout</p>
+                        <p><strong>Status:</strong> <span class="status-offline">OFFLINE</span></p>
+                        <p><strong>Resolution:</strong> 1920x1080</p>
+                    </div>
+                </div>
+
+                <div class="camera-card">
+                    <div class="camera-placeholder">📹</div>
+                    <div class="camera-info">
+                        <p><strong>Location:</strong> Storage Area</p>
+                        <p><strong>Status:</strong> <span class="status-offline">OFFLINE</span></p>
+                        <p><strong>Resolution:</strong> 1920x1080</p>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <!-- Camera Control -->
+        <!-- Real-time Activity -->
+        <section class="stats-section">
+            <h3>Real-Time Activity</h3>
+            <div class="activity-log">
+                <p class="no-activity">No events detected. System ready for monitoring.</p>
+            </div>
+        </section>
+
+        <!-- Dashboard Actions -->
         <section class="controls-section">
-            <h3>Camera Controls</h3>
+            <h3>Monitoring Controls</h3>
             <div class="btn-group">
-                <button class="btn btn-primary" onclick="startMonitoring()">▶️ Start Monitoring</button>
-                <button class="btn btn-secondary" onclick="stopMonitoring()">⏹️ Stop Monitoring</button>
+                <button class="btn btn-primary" onclick="startMonitoring()">▶ Start Monitoring</button>
+                <button class="btn btn-secondary" onclick="stopMonitoring()">⏹ Stop Monitoring</button>
                 <button class="btn btn-tertiary" onclick="resetSystem()">🔄 Reset System</button>
             </div>
         </section>
