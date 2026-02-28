@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - AI Crime Detection System</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <h1>🔒 AI Surveillance System</h1>
+            <p class="subtitle">Smart Supermarket Crime Detection</p>
+        </div>
+        <ul class="navbar-menu">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="alerts.html">Alerts</a></li>
+            <li><a href="settings.html" class="active">Settings</a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <h2>System Settings & Configuration</h2>
+
+        <!-- Settings Tabs -->
+        <section class="settings-section">
+            
+            <!-- General Settings -->
+            <div class="settings-panel">
+                <h3>🔧 General Settings</h3>
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label for="store-name">Store Name:</label>
+                        <input type="text" id="store-name" placeholder="Enter store name" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="store-location">Location:</label>
+                        <input type="text" id="store-location" placeholder="Enter store location" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="system-mode">System Mode:</label>
+                        <select id="system-mode" class="form-input">
+                            <option value="disabled">Disabled</option>
+                            <option value="standby">Standby</option>
+                            <option value="active">Active Monitoring</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="refresh-rate">Refresh Rate (seconds):</label>
+                        <input type="number" id="refresh-rate" min="1" max="60" value="5" class="form-input">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Camera Configuration -->
+            <div class="settings-panel">
+                <h3>📹 Camera Configuration</h3>
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label for="num-cameras">Number of Cameras:</label>
+                        <input type="number" id="num-cameras" min="1" max="16" value="4" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="resolution">Camera Resolution:</label>
+                        <select id="resolution" class="form-input">
+                            <option value="720p">1280x720 (720p)</option>
+                            <option value="1080p" selected>1920x1080 (1080p)</option>
+                            <option value="2k">2560x1440 (2K)</option>
+                            <option value="4k">3840x2160 (4K)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="fps">Frames Per Second:</label>
+                        <select id="fps" class="form-input">
+                            <option value="15">15 FPS</option>
+                            <option value="24">24 FPS</option>
+                            <option value="30" selected>30 FPS</option>
+                            <option value="60">60 FPS</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Detection Settings -->
+            <div class="settings-panel">
+                <h3>🤖 AI Detection Settings</h3>
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label for="detection-model">Detection Model:</label>
+                        <select id="detection-model" class="form-input">
+                            <option value="">Select Model</option>
+                            <option value="yolov5">YOLO v5</option>
+                            <option value="yolov8">YOLO v8</option>
+                            <option value="custom">Custom Model</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="confidence-threshold">Confidence Threshold:</label>
+                        <input type="range" id="confidence-threshold" min="0" max="100" value="70" class="form-input">
+                        <span id="threshold-value">70%</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="behavior-detection">Enable Behavior Recognition:</label>
+                        <input type="checkbox" id="behavior-detection" class="form-checkbox" checked>
+                    </div>
+                    <div class="form-group">
+                        <label for="anomaly-detection">Enable Anomaly Detection:</label>
+                        <input type="checkbox" id="anomaly-detection" class="form-checkbox" checked>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alert Settings -->
+            <div class="settings-panel">
+                <h3>🚨 Alert Settings</h3>
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label for="alert-method">Alert Method:</label>
+                        <select id="alert-method" class="form-input">
+                            <option value="">Select Method</option>
+                            <option value="email">Email</option>
+                            <option value="sms">SMS</option>
+                            <option value="both">Email & SMS</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email Address:</label>
+                        <input type="email" id="email" placeholder="owner@supermarket.com" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Phone Number:</label>
+                        <input type="tel" id="phone" placeholder="+1-XXX-XXX-XXXX" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="alert-delay">Alert Delay (seconds):</label>
+                        <input type="number" id="alert-delay" min="0" max="30" value="5" class="form-input">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Storage Settings -->
+            <div class="settings-panel">
+                <h3>💾 Storage Settings</h3>
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label for="storage-type">Storage Type:</label>
+                        <select id="storage-type" class="form-input">
+                            <option value="local">Local Storage</option>
+                            <option value="cloud">Cloud Storage</option>
+                            <option value="both">Local + Cloud</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="retention">Retention Period (days):</label>
+                        <input type="number" id="retention" min="1" max="365" value="30" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="storage-path">Storage Path:</label>
+                        <input type="text" id="storage-path" placeholder="/media/evidence/" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="max-storage">Maximum Storage (GB):</label>
+                        <input type="number" id="max-storage" min="1" value="500" class="form-input">
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Information -->
+            <div class="settings-panel">
+                <h3>ℹ️ System Information</h3>
+                <div class="system-info">
+                    <p><strong>System Version:</strong> Stage 0 - v1.0</p>
+                    <p><strong>Last Updated:</strong> February 28, 2026</p>
+                    <p><strong>Status:</strong> Foundation Phase</p>
+                    <p><strong>Installed Location:</strong> c:\Users\546ut\OneDrive\Desktop\project IV\stage_0</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Settings Actions -->
+        <section class="controls-section">
+            <h3>Actions</h3>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="saveSettings()">💾 Save Settings</button>
+                <button class="btn btn-secondary" onclick="resetSettings()">🔄 Reset to Default</button>
+                <button class="btn btn-tertiary" onclick="testSettings()">🧪 Test Configuration</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2026 AI Crime Detection System. All rights reserved. | Stage 0 - Foundation Phase</p>
+    </footer>
+
+    <script src="../js/main.js"></script>
+    <script>
+        // Range slider value update
+        document.getElementById('confidence-threshold').addEventListener('input', function() {
+            document.getElementById('threshold-value').textContent = this.value + '%';
+        });
+
+        function saveSettings() {
+            alert('Settings saved! To be fully implemented in Stage 1');
+        }
+        function resetSettings() {
+            alert('Settings reset to default. To be fully implemented in Stage 1');
+        }
+        function testSettings() {
+            alert('Testing configuration... To be fully implemented in Stage 1');
+        }
+    </script>
+</body>
+</html>

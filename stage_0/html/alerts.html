@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alerts & Incidents - AI Crime Detection System</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <h1>🔒 AI Surveillance System</h1>
+            <p class="subtitle">Smart Supermarket Crime Detection</p>
+        </div>
+        <ul class="navbar-menu">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="alerts.html" class="active">Alerts</a></li>
+            <li><a href="settings.html">Settings</a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <h2>Alerts & Incident Log</h2>
+
+        <!-- Alert Statistics -->
+        <section class="alert-stats">
+            <h3>Alert Statistics</h3>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h4>Total Alerts</h4>
+                    <p class="stat-number">0</p>
+                </div>
+                <div class="stat-card">
+                    <h4>Critical Incidents</h4>
+                    <p class="stat-number">0</p>
+                </div>
+                <div class="stat-card">
+                    <h4>Incidents Today</h4>
+                    <p class="stat-number">0</p>
+                </div>
+                <div class="stat-card">
+                    <h4>Resolved Alerts</h4>
+                    <p class="stat-number">0</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Filter Options -->
+        <section class="filter-section">
+            <h3>Filter Alerts</h3>
+            <div class="filter-group">
+                <input type="date" class="filter-input" placeholder="From Date">
+                <input type="date" class="filter-input" placeholder="To Date">
+                <select class="filter-input">
+                    <option value="">All Severities</option>
+                    <option value="critical">Critical</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                </select>
+                <select class="filter-input">
+                    <option value="">All Statuses</option>
+                    <option value="new">New</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="resolved">Resolved</option>
+                </select>
+                <button class="btn btn-primary">🔍 Search</button>
+            </div>
+        </section>
+
+        <!-- Alert Table -->
+        <section class="alerts-section">
+            <h3>Recent Alerts</h3>
+            <table class="alerts-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Camera</th>
+                        <th>Incident Type</th>
+                        <th>Severity</th>
+                        <th>Status</th>
+                        <th>Evidence</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="7" class="no-data">No alerts recorded. System awaiting first incident detection.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Incident Details -->
+        <section class="incident-details">
+            <h3>Incident Analysis</h3>
+            <div class="details-panel">
+                <p>Select an alert from the table above to view detailed analysis and video evidence.</p>
+                <div class="empty-state">
+                    <p>📋 No incident selected</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Video Evidence -->
+        <section class="evidence-section">
+            <h3>Evidence Management</h3>
+            <div class="evidence-grid">
+                <div class="evidence-card">
+                    <p>No video evidence available</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Alert Actions -->
+        <section class="controls-section">
+            <h3>Management Actions</h3>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="downloadReport()">📥 Download Report</button>
+                <button class="btn btn-secondary" onclick="exportData()">📊 Export Data</button>
+                <button class="btn btn-tertiary" onclick="clearAlerts()">🗑️ Clear Alerts</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2026 AI Crime Detection System. All rights reserved. | Stage 0 - Foundation Phase</p>
+    </footer>
+
+    <script src="../js/main.js"></script>
+    <script>
+        function downloadReport() {
+            alert('Download report feature to be implemented in Stage 1');
+        }
+        function exportData() {
+            alert('Export data feature to be implemented in Stage 1');
+        }
+        function clearAlerts() {
+            alert('Clear alerts feature to be implemented in Stage 1');
+        }
+    </script>
+</body>
+</html>
