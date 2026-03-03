@@ -1,0 +1,50 @@
+{
+  "users": [
+    {
+      "id": "98d68cc2-cd82-4c09-ba80-f0840e3f49d1",
+      "email": "ankitpatel.sonvarsha@gmail.com",
+      "password_hash": "scrypt:32768:8:1$ZMxANkZA0mD5BafN$8d7cbd5747173f5a313bafc7a3342a3567bc166b0717edcc2179d747d6dda918a1e2a6271dddad441d38c2388ff6b8e219a9e50173316052c3442c293c9254ad",
+      "created_at": "2026-03-03T13:31:18.444868"
+    },
+    {
+      "id": "f1754aea-349b-4f03-ab35-886db762bb6a",
+      "email": "ankit@gmail.com",
+      "password_hash": "scrypt:32768:8:1$muoMnf33YabKDgKn$21c14be9b2e98b7880cf8f8498ae215c4156a5045ce9dfd33bf37a6ea75d99b7a89b58be13b749701d1ab7c140acfef8371c5030ccc1372af7a142859e683b7d",
+      "created_at": "2026-03-03T13:36:44.065351"
+    }
+  ],
+  "alerts": [
+    {
+      "id": "2c04d884-114b-4cd7-9b17-4e5ea85d0f03",
+      "timestamp": "2026-03-03T13:36:53.851091",
+      "confidence": 0.99,
+      "activity_type": "Shoplifting",
+      "severity": "high",
+      "clip": "2c04d884-114b-4cd7-9b17-4e5ea85d0f03.mp4"
+    },
+    {
+      "id": "b4303c24-e7ba-4d94-a3c1-47932d6c3a07",
+      "timestamp": "2026-03-03T13:37:04.739321",
+      "confidence": 0.72,
+      "activity_type": "Suspicious Behavior",
+      "severity": "medium",
+      "clip": "b4303c24-e7ba-4d94-a3c1-47932d6c3a07.mp4"
+    },
+    {
+      "id": "afe47bac-cb97-4c72-bdca-bf228d00906c",
+      "timestamp": "2026-03-03T13:37:18.123537",
+      "confidence": 0.7,
+      "activity_type": "Suspicious Behavior",
+      "severity": "medium",
+      "clip": "afe47bac-cb97-4c72-bdca-bf228d00906c.mp4"
+    },
+    {
+      "id": "9592e810-825c-4156-8b69-0db84cc6a017",
+      "timestamp": "2026-03-03T13:37:29.123574",
+      "confidence": 0.7,
+      "activity_type": "Suspicious Behavior",
+      "severity": "medium",
+      "clip": "9592e810-825c-4156-8b69-0db84cc6a017.mp4"
+    }
+  ]
+}
