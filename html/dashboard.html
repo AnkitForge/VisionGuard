@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Dashboard - AI Crime Detection System</title>
+    <title>Live Dashboard - VisionGuard</title>
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
     <!-- Navigation Bar -->
     <nav class="navbar">
         <div class="navbar-brand">
-            <h1>🔒 AI Surveillance System</h1>
-            <p class="subtitle">Smart Supermarket Crime Detection</p>
+            <h1>🔒 VisionGuard</h1>
+            <p class="subtitle">Real-Time Monitoring</p>
         </div>
         <ul class="navbar-menu">
             <li><a href="index.html">Home</a></li>
@@ -23,42 +23,46 @@
 
     <!-- Main Content -->
     <div class="container">
-        <h2>Live Monitoring Dashboard</h2>
+        <h2>📊 Live Monitoring Dashboard</h2>
 
         <!-- System Status Summary -->
         <section class="alert-stats">
-            <h3>System Overview</h3>
+            <h3>System Status Overview</h3>
             <div class="stats-grid">
                 <div class="stat-card">
                     <h4>Connected Cameras</h4>
                     <p class="stat-number">0</p>
+                    <p class="status-text" style="margin-top: 0.5rem;">Ready to stream</p>
                 </div>
                 <div class="stat-card">
                     <h4>Active Monitoring</h4>
                     <p class="stat-number">0</p>
+                    <p class="status-text" style="margin-top: 0.5rem;">Streams active</p>
                 </div>
                 <div class="stat-card">
                     <h4>Alerts Today</h4>
                     <p class="stat-number">0</p>
+                    <p class="status-text" style="margin-top: 0.5rem;">Incidents detected</p>
                 </div>
                 <div class="stat-card">
-                    <h4>Uptime</h4>
+                    <h4>System Uptime</h4>
                     <p class="stat-number">0h</p>
+                    <p class="status-text" style="margin-top: 0.5rem;">Running time</p>
                 </div>
             </div>
         </section>
 
         <!-- Camera Feeds -->
         <section class="camera-section">
-            <h3>CCTV Camera Feeds</h3>
-            <p style="color: #666; margin-bottom: 1.5rem;">Select cameras to display live feeds and monitor activity</p>
+            <h3>📹 CCTV Camera Feeds</h3>
+            <p style="color: #666; margin-bottom: 1.75rem; line-height: 1.7;">Connect your CCTV cameras to begin live surveillance and threat detection</p>
             <div class="camera-grid">
                 <div class="camera-card">
                     <div class="camera-placeholder">📹</div>
                     <div class="camera-info">
                         <p><strong>Location:</strong> Entrance</p>
-                        <p><strong>Status:</strong> <span class="status-offline">OFFLINE</span></p>
-                        <p><strong>Resolution:</strong> 1920x1080</p>
+                        <p><strong>Status:</strong> <span class="status-offline">⚫ OFFLINE</span></p>
+                        <p><strong>Resolution:</strong> 1920×1080</p>
                     </div>
                 </div>
 
@@ -66,8 +70,8 @@
                     <div class="camera-placeholder">📹</div>
                     <div class="camera-info">
                         <p><strong>Location:</strong> Main Aisle</p>
-                        <p><strong>Status:</strong> <span class="status-offline">OFFLINE</span></p>
-                        <p><strong>Resolution:</strong> 1920x1080</p>
+                        <p><strong>Status:</strong> <span class="status-offline">⚫ OFFLINE</span></p>
+                        <p><strong>Resolution:</strong> 1920×1080</p>
                     </div>
                 </div>
 
@@ -75,8 +79,8 @@
                     <div class="camera-placeholder">📹</div>
                     <div class="camera-info">
                         <p><strong>Location:</strong> Checkout</p>
-                        <p><strong>Status:</strong> <span class="status-offline">OFFLINE</span></p>
-                        <p><strong>Resolution:</strong> 1920x1080</p>
+                        <p><strong>Status:</strong> <span class="status-offline">⚫ OFFLINE</span></p>
+                        <p><strong>Resolution:</strong> 1920×1080</p>
                     </div>
                 </div>
 
@@ -84,8 +88,8 @@
                     <div class="camera-placeholder">📹</div>
                     <div class="camera-info">
                         <p><strong>Location:</strong> Storage Area</p>
-                        <p><strong>Status:</strong> <span class="status-offline">OFFLINE</span></p>
-                        <p><strong>Resolution:</strong> 1920x1080</p>
+                        <p><strong>Status:</strong> <span class="status-offline">⚫ OFFLINE</span></p>
+                        <p><strong>Resolution:</strong> 1920×1080</p>
                     </div>
                 </div>
             </div>
@@ -93,15 +97,15 @@
 
         <!-- Real-time Activity -->
         <section class="stats-section">
-            <h3>Real-Time Activity</h3>
+            <h3>⏱️ Real-Time Activity Log</h3>
             <div class="activity-log">
-                <p class="no-activity">No events detected. System ready for monitoring.</p>
+                <p class="no-activity">✓ System online and monitoring. No unusual activity detected.</p>
             </div>
         </section>
 
-        <!-- Dashboard Actions -->
+        <!-- Dashboard Controls -->
         <section class="controls-section">
-            <h3>Monitoring Controls</h3>
+            <h3>🎮 Monitoring Controls</h3>
             <div class="btn-group">
                 <button class="btn btn-primary" onclick="startMonitoring()">▶ Start Monitoring</button>
                 <button class="btn btn-secondary" onclick="stopMonitoring()">⏹ Stop Monitoring</button>
@@ -112,19 +116,19 @@
 
     <!-- Footer -->
     <footer class="footer">
-        <p>&copy; 2026 AI Crime Detection System. All rights reserved. | Stage 0 - Foundation Phase</p>
+        <p>&copy; 2024-2026 VisionGuard AI Security. All rights reserved.</p>
     </footer>
 
     <script src="../js/main.js"></script>
     <script>
         function startMonitoring() {
-            alert('Monitoring feature to be implemented in Stage 1');
+            alert('✓ Monitoring will start in Stage 1 with actual camera integration');
         }
         function stopMonitoring() {
-            alert('Stop monitoring feature to be implemented in Stage 1');
+            alert('⏹ Stop monitoring feature will be available in Phase 2');
         }
         function resetSystem() {
-            alert('Reset system feature to be implemented in Stage 1');
+            alert('🔄 System reset feature coming in production release');
         }
     </script>
 </body>

@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alerts & Incidents - AI Crime Detection System</title>
+    <title>Alerts & Incidents - VisionGuard</title>
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
     <!-- Navigation Bar -->
     <nav class="navbar">
         <div class="navbar-brand">
-            <h1>🔒 AI Surveillance System</h1>
-            <p class="subtitle">Smart Supermarket Crime Detection</p>
+            <h1>🔒 VisionGuard</h1>
+            <p class="subtitle">Alert Management</p>
         </div>
         <ul class="navbar-menu">
             <li><a href="index.html">Home</a></li>
@@ -23,7 +23,7 @@
 
     <!-- Main Content -->
     <div class="container">
-        <h2>Alerts & Incident Log</h2>
+        <h2>🚨 Alerts & Incident Log</h2>
 
         <!-- Alert Statistics -->
         <section class="alert-stats">
@@ -32,25 +32,29 @@
                 <div class="stat-card">
                     <h4>Total Alerts</h4>
                     <p class="stat-number">0</p>
+                    <p class="status-text" style="margin-top: 0.5rem;">All incidents</p>
                 </div>
                 <div class="stat-card">
                     <h4>Critical Issues</h4>
                     <p class="stat-number">0</p>
+                    <p class="status-text" style="margin-top: 0.5rem;">High priority</p>
                 </div>
                 <div class="stat-card">
                     <h4>Today</h4>
                     <p class="stat-number">0</p>
+                    <p class="status-text" style="margin-top: 0.5rem;">24hr window</p>
                 </div>
                 <div class="stat-card">
                     <h4>Resolved</h4>
                     <p class="stat-number">0</p>
+                    <p class="status-text" style="margin-top: 0.5rem;">Closed cases</p>
                 </div>
             </div>
         </section>
 
         <!-- Filter Options -->
         <section class="filter-section">
-            <h3>Search & Filter Alerts</h3>
+            <h3>🔍 Search & Filter Alerts</h3>
             <div class="filter-group">
                 <input type="date" class="filter-input" placeholder="From Date">
                 <input type="date" class="filter-input" placeholder="To Date">
@@ -77,9 +81,9 @@
             <table class="alerts-table">
                 <thead>
                     <tr>
-                        <th>Time</th>
+                        <th>Timestamp</th>
                         <th>Location</th>
-                        <th>Type</th>
+                        <th>Alert Type</th>
                         <th>Severity</th>
                         <th>Status</th>
                         <th>Evidence</th>
@@ -87,7 +91,7 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="6" class="no-data">No alerts recorded. System monitoring active.</td>
+                        <td colspan="6" class="no-data">✓ No alerts recorded. Your store is secure.</td>
                     </tr>
                 </tbody>
             </table>
@@ -95,17 +99,17 @@
 
         <!-- Incident Details -->
         <section class="incident-details">
-            <h3>Incident Analysis</h3>
+            <h3>📋 Incident Analysis</h3>
             <div class="details-panel">
                 <div class="empty-state">
-                    <p>📋 Select an alert to view detailed analysis</p>
+                    <p>📋 Select an alert above to view detailed incident analysis</p>
                 </div>
             </div>
         </section>
 
-        <!-- Management -->
+        <!-- Alert Management -->
         <section class="controls-section">
-            <h3>Alert Management</h3>
+            <h3>📥 Alert Management Tools</h3>
             <div class="btn-group">
                 <button class="btn btn-primary" onclick="downloadReport()">📥 Download Report</button>
                 <button class="btn btn-secondary" onclick="exportData()">📊 Export Data</button>
@@ -116,19 +120,21 @@
 
     <!-- Footer -->
     <footer class="footer">
-        <p>&copy; 2026 AI Crime Detection System. All rights reserved. | Stage 0 - Foundation Phase</p>
+        <p>&copy; 2024-2026 VisionGuard AI Security. All rights reserved.</p>
     </footer>
 
     <script src="../js/main.js"></script>
     <script>
         function downloadReport() {
-            alert('Download report feature to be implemented in Stage 1');
+            alert('📥 Report download will be available in production');
         }
         function exportData() {
-            alert('Export data feature to be implemented in Stage 1');
+            alert('📊 Data export feature coming in the next release');
         }
         function clearAlerts() {
-            alert('Clear alerts feature to be implemented in Stage 1');
+            if(confirm('🗑️ Are you sure you want to clear all alerts?')) {
+                alert('✓ Alert clearance confirmed for implementation phase');
+            }
         }
     </script>
 </body>
