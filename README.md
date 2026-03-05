@@ -14,14 +14,6 @@ The system analyzes video streams in real time, generates alerts for suspicious 
 This project demonstrates the use of **computer vision, AI monitoring, and modern full-stack development** to enhance retail security.
 
 ---
-
-# Live Demo (Optional)
-
-Add your deployed project link here:
-
-Frontend: https://your-frontend-url.com
-Backend API: https://your-backend-url.com
-
 ---
 
 # Features
