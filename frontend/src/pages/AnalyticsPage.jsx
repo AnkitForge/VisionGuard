@@ -1,14 +1,19 @@
+// Import React hooks for managing component state and lifecycle
 import { useEffect, useState } from 'react'
+// Import toast notifications for error messages
 import toast from 'react-hot-toast'
+// Import chart components from recharts for analytics visualization
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
+// Import API instance (Axios or similar) for backend communication
 import { api } from '../services/api'
 import LoadingSpinner from '../components/LoadingSpinner'
-
+// Color palette used for pie chart segments
 const COLORS = ['#22d3ee', '#fb7185', '#f59e0b', '#34d399']
 
 function AnalyticsPage() {
   const [loading, setLoading] = useState(true)
   const [analytics, setAnalytics] = useState({ alerts_per_day: [], threat_distribution: [], detection_accuracy: 0, total_alerts: 0 })
+  // useEffect runs once when the component loads
 
   useEffect(() => {
     ;(async () => {
@@ -21,8 +26,8 @@ function AnalyticsPage() {
       } finally {
         setLoading(false)
       }
-    })()
-  }, [])
+    })() 
+  }, [])// empty dependency array → runs only once on page load
 
   return (
     <div className="space-y-4">
