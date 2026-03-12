@@ -1,153 +1,349 @@
-# VisionGuard - AI-Based Crime Detection System for Supermarkets
 
-An intelligent surveillance solution that uses AI and computer vision to detect suspicious activities and potential theft in supermarkets using CCTV cameras.
+# VisionGuard – AI-Based Crime Detection System
+
+![React](https://img.shields.io/badge/Frontend-React-blue)
+![Tailwind](https://img.shields.io/badge/UI-TailwindCSS-38B2AC)
+![Flask](https://img.shields.io/badge/Backend-Flask-black)
+![OpenCV](https://img.shields.io/badge/ComputerVision-OpenCV-green)
+![JWT](https://img.shields.io/badge/Auth-JWT-orange)
+![License](https://img.shields.io/badge/License-MIT-yellow)
+
+VisionGuard is a **full-stack AI-powered surveillance system** designed to detect suspicious activities in supermarkets or retail environments using CCTV feeds.
+
+The system analyzes video streams in real time, generates alerts for suspicious behavior, stores evidence clips, and provides analytics through an interactive dashboard.
+
+This project demonstrates the use of **computer vision, AI monitoring, and modern full-stack development** to enhance retail security.
+
+---
+---
+
+# Features
+
+### Live Camera Monitoring
+
+* Connects to **webcam or CCTV feed**
+* Displays live video stream in dashboard
+* Real-time frame processing using OpenCV
+
+### Suspicious Activity Detection
+
+* Uses **motion detection and object detection**
+* Can be extended with **YOLOv8 models**
+
+### Real-Time Alerts
+
+* Instant alert when suspicious activity is detected
+* Alert includes:
+
+  * Timestamp
+  * Detection confidence
+  * Event type
+
+### Evidence Recording
+
+* Automatically saves **10–15 second video clips**
+* Stored as evidence for later review
+* Clips can be **downloaded from dashboard**
+
+### Analytics Dashboard
+
+Displays:
+
+* Alerts per day
+* Threat distribution
+* System activity
+* Detection statistics
+
+### Authentication
+
+* Admin login / register
+* JWT authentication
+* Protected routes
 
 ---
 
-## Team Members
+# Tech Stack
 
-| Name | University Roll Number |
-|------|------------------------|
-| Uttam Singh | 2415500494 |
-| Yuvraj Jindal | 2315510118 |
-| Ankit Patel | 2415500074 |
+## Frontend
 
----
+* React (Vite)
+* Tailwind CSS
+* React Router
+* Axios
+* Framer Motion
+* Recharts
 
-## Table of Contents
+## Backend
 
-- [Abstract](#abstract)
-- [Introduction](#introduction)
-- [Problem Statement](#problem-statement)
-- [Objectives](#objectives-of-the-project)
-- [Proposed Methodology](#proposed-methodology)
-- [System Architecture](#system-architecture)
-- [Tools and Technologies](#tools-and-technologies-used)
-- [Applications](#applications)
-- [Expected Outcomes](#expected-outcomes)
-- [Future Scope](#future-scope)
-- [Conclusion](#conclusion)
+* Flask
+* OpenCV
+* JWT Authentication
+* REST APIs
 
----
+## Database
 
-## Abstract
-
-Shoplifting and theft are major challenges faced by supermarkets and retail stores. Although CCTV cameras are widely used, continuous manual monitoring is difficult and inefficient. This project proposes an AI-based crime detection system that continuously monitors customer activities using CCTV cameras. When suspicious behavior or theft-related activity is detected, the system automatically generates an alert and records a short video clip. This alert and video evidence are sent to the shop owner to enable quick response and preventive action.
+* Local JSON storage (`backend/storage/db.json`)
+* Optional MongoDB support
 
 ---
 
-## Introduction
+# Project Architecture
 
-With the rapid growth of retail businesses, ensuring customer and product security has become increasingly important. Supermarkets often experience financial losses due to shoplifting and theft. Traditional security methods rely heavily on security guards and manual CCTV monitoring, which are prone to human error. Artificial Intelligence and Computer Vision provide an opportunity to automate surveillance and improve security systems. This project focuses on designing a smart system that can analyze live video feeds and detect suspicious activities in real time.
-
----
-
-## Problem Statement
-
-Existing security systems in supermarkets have several limitations:
-
-- Manual monitoring of CCTV footage is time-consuming and requires continuous attention
-- In crowded environments, theft incidents may go unnoticed
-- Security personnel may miss critical moments due to fatigue or distraction
-
-Therefore, there is a strong need for an automated crime detection system that can monitor activities continuously and alert authorities instantly.
-
----
-
-## Objectives of the Project
-
-The primary objectives of this project are:
-
-- To continuously monitor customer activities using CCTV cameras
-- To automatically detect suspicious or theft-related behavior
-- To generate real-time alerts for shop owners
-- To record and store short video clips as evidence
-- To reduce dependency on manual monitoring
-
----
-
-## Proposed Methodology
-
-The proposed system captures live video streams from CCTV cameras installed inside the supermarket. Each video frame is processed using computer vision techniques. Machine learning models such as object detection and activity recognition are used to identify suspicious behavior. When an abnormal activity is detected, the system triggers an alarm and starts recording a short video clip. The recorded clip and alert notification are then sent to the shop owner through an alert system.
+```
+Camera / CCTV
+       │
+       ▼
+OpenCV Frame Processing
+       │
+       ▼
+Suspicious Activity Detection
+       │
+       ├── Alert Generation
+       │
+       ├── Evidence Recording
+       │
+       ▼
+Flask Backend API
+       │
+       ▼
+React Dashboard
+       │
+       ├── Live Feed
+       ├── Alerts
+       ├── Evidence
+       └── Analytics
+```
 
 ---
 
-## System Architecture
+# Project Structure
 
-The system architecture consists of the following components:
-
-- **CCTV Cameras**: Capture video input
-- **Processing Unit**: Handles video stream processing
-- **AI Model**: Analyzes frames for suspicious activities
-- **Alert Module**: Sends notifications to shop owner
-
-This modular design allows easy upgrades and scalability.
-
----
-
-## Tools and Technologies Used
-
-| Component | Technology |
-|-----------|-----------|
-| **Programming Language** | Python |
-| **Computer Vision** | OpenCV |
-| **Object Detection** | YOLO |
-| **Deep Learning** | TensorFlow |
-| **Hardware** | CCTV Camera / Webcam |
-| **Storage** | Local Storage / Cloud Storage |
-| **Alert System** | Email Notification / Alarm System |
-
-**Key Techniques**: Object Detection, Activity Recognition
+```
+VisionGuard/
+│
+├── frontend/           # React dashboard
+│
+├── backend/
+│   ├── app/
+│   │   ├── server.py
+│   │   ├── routes/
+│   │   ├── services/
+│   │   └── camera_processing/
+│   │
+│   ├── storage/
+│   │   └── db.json
+│   │
+│   └── evidence/
+│
+└── README.md
+```
 
 ---
 
-## Applications
+# Backend Setup
 
-This system can be implemented in various environments such as:
+```bash
+cd backend
 
-- Supermarkets
-- Retail stores
-- Shopping malls
-- Warehouses
-- Departmental stores
-- Other public places requiring surveillance
+python -m venv .venv
 
----
+source .venv/bin/activate
 
-## Expected Outcomes
+pip install -r requirements.txt
 
-The expected outcomes of this project include:
+cp .env.example .env
 
-✓ Accurate detection of theft activities  
-✓ Reduced financial losses for shop owners  
-✓ Faster response time to security incidents  
-✓ Improved overall security infrastructure  
-✓ Video evidence for investigation purposes
+python app/server.py
+```
 
----
+Backend runs on:
 
-## Future Scope
-
-Future enhancements of this project may include:
-
-- Face recognition capabilities
-- Mobile application alerts
-- Cloud-based storage integration
-- Integration with law enforcement systems
-- Improved accuracy using advanced deep learning models
-- Real-time dashboard for monitoring
-- Multi-camera integration and coordination
+```
+http://localhost:5000
+```
 
 ---
 
-## Conclusion
+# Frontend Setup
 
-The AI-based crime detection system provides an effective and automated solution for supermarket security. By reducing manual effort and improving detection accuracy, the system helps shop owners prevent theft and maintain a safe environment. This project demonstrates the practical application of AI and computer vision in real-world security problems.
+```bash
+cd frontend
+
+npm install
+
+cp .env.example .env
+
+npm run dev
+```
+
+Frontend runs on:
+
+```
+http://localhost:5173
+```
 
 ---
 
-## Getting Started
+# API Endpoints
 
-For setup and installation instructions, refer to [GETTING_STARTED.md](./stage_0/GETTING_STARTED.md)
+| Method | Endpoint           | Description        |
+| ------ | ------------------ | ------------------ |
+| POST   | /api/auth/login    | Login user         |
+| POST   | /api/auth/register | Register admin     |
+| GET    | /api/alerts        | Fetch alerts       |
+| GET    | /api/analytics     | Fetch analytics    |
+| POST   | /api/start-camera  | Start monitoring   |
+| POST   | /api/stop-camera   | Stop camera        |
+| GET    | /api/evidence      | Get evidence clips |
+| GET    | /api/system-status | System health      |
+| GET    | /api/video-feed    | Live video stream  |
 
-For project architecture details, see [ARCHITECTURE.md](./stage_0/docs/ARCHITECTURE.md)
+---
+
+# Screenshots
+
+Add screenshots of your project here.
+
+Example:
+
+/screenshots
+dashboard.png
+alerts.png
+analytics.png
+
+### Dashboard
+
+![Dashboard](screenshots/dashboard.png)
+
+### Alerts
+
+![Alerts](screenshots/alerts.png)
+
+### Analytics
+
+![Analytics](screenshots/analytics.png)
+
+---
+
+# Demo GIF
+
+Record a demo of:
+
+* Starting camera
+* Detecting suspicious activity
+* Alert popup
+* Evidence clip saved
+
+Then add:
+
+```
+![Demo](screenshots/demo.gif)
+```
+
+---
+
+# Environment Variables
+
+## Backend (.env)
+
+```
+JWT_SECRET=
+JWT_EXPIRE_HOURS=
+
+CORS_ORIGINS=
+
+DATA_MODE=local
+MONGO_URI=
+MONGO_DB=
+
+CAMERA_SOURCE=0
+
+ALERTS_DIR=
+
+SMTP_HOST=
+SMTP_PORT=
+SMTP_USER=
+SMTP_PASS=
+ALERT_EMAIL_TO=
+```
+
+---
+
+## Frontend (.env)
+
+```
+VITE_API_BASE_URL=http://localhost:5000
+```
+
+---
+
+# Future Improvements
+
+* YOLOv8 detection model
+* Face recognition
+* Mobile push notifications
+* Cloud storage (AWS S3)
+* Multi-camera monitoring
+* WebSocket real-time alerts
+* AI behavioral analysis
+
+---
+
+# Team
+
+### Ankit Patel
+
+* UI Development
+* Flask integration
+* JWT Authentication
+* OpenCV integration
+* System architecture
+
+### Uttam Singh
+
+* Backend development
+* API implementation
+* Server logic
+
+### Yuvraj Jindal
+
+* Alert system development
+* Backend alert handling
+* Notification system
+
+---
+
+# Contributing
+
+Contributions are welcome.
+
+Steps:
+
+1. Fork the repository
+
+2. Create a new branch
+
+```
+git checkout -b feature-name
+```
+
+3. Commit changes
+
+```
+git commit -m "Added new feature"
+```
+
+4. Push branch
+
+```
+git push origin feature-name
+```
+
+5. Open a Pull Request
+
+---
+
+# License
+
+This project is developed for **educational and research purposes**.
+>>>>>>> 6eb5a8a7cd5b654e6d331f58756a452c628c65ea
