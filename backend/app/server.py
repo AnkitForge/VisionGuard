@@ -1,643 +1,488 @@
-import datetime as dt
-import json
+"""
+server.py
+─────────
+Flask application for VisionGuard — real-time shoplifting detection.
+
+Provides:
+  • JWT-based authentication (register / login)
+  • Live MJPEG video stream with theft-detection overlay
+  • Camera start / stop / demo-video upload
+  • Alerts, evidence clip serving, and analytics APIs
+"""
+
 import os
-import smtplib
-import threading
+import sys
 import time
-import uuid
-from collections import Counter, defaultdict, deque
-from email.message import EmailMessage
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+import datetime
+import threading
+import functools
 
 import cv2
 import jwt
+import bcrypt
 import numpy as np
-from dotenv import load_dotenv
-from flask import Flask, Response, jsonify, request, send_from_directory
+from flask import (
+    Flask,
+    Response,
+    jsonify,
+    request,
+    send_from_directory,
+)
 from flask_cors import CORS
-from werkzeug.security import check_password_hash, generate_password_hash
-
-from ultralytics import YOLO
-from deep_sort_realtime.deepsort_tracker import DeepSort
-from playsound import playsound
-import threading
-
-from ultralytics import YOLO
-from deep_sort_realtime.deepsort_tracker import DeepSort
-from playsound import playsound
-import threading
-
-try:
-    from pymongo import MongoClient
-except Exception:  # pragma: no cover
-    MongoClient = None
-
-
-class LocalStore:
-    def __init__(self, db_path: Path):
-        self.db_path = db_path
-        self.lock = threading.Lock()
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        if not self.db_path.exists():
-            self._write({"users": [], "alerts": []})
-
-    def _read(self) -> Dict[str, Any]:
-        with self.lock:
-            return json.loads(self.db_path.read_text())
-
-    def _write(self, payload: Dict[str, Any]) -> None:
-        with self.lock:
-            self.db_path.write_text(json.dumps(payload, indent=2))
-
-    def create_user(self, email: str, password_hash: str) -> Dict[str, Any]:
-        data = self._read()
-        if any(user["email"] == email for user in data["users"]):
-            raise ValueError("Email already registered")
-        user = {
-            "id": str(uuid.uuid4()),
-            "email": email,
-            "password_hash": password_hash,
-            "created_at": dt.datetime.utcnow().isoformat(),
-        }
-        data["users"].append(user)
-        self._write(data)
-        return user
-
-    def find_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
-        data = self._read()
-        return next((u for u in data["users"] if u["email"] == email), None)
-
-    def create_alert(self, alert: Dict[str, Any]) -> None:
-        data = self._read()
-        data["alerts"].append(alert)
-        self._write(data)
-
-    def get_alerts(self, since: Optional[str] = None) -> List[Dict[str, Any]]:
-        data = self._read()
-        alerts = data["alerts"]
-        if since:
-            alerts = [a for a in alerts if a["timestamp"] > since]
-        return sorted(alerts, key=lambda x: x["timestamp"], reverse=True)
-
-
-class MongoStore:
-    def __init__(self, mongo_uri: str, db_name: str):
-        if MongoClient is None:
-            raise RuntimeError("pymongo is not installed")
-        self.client = MongoClient(mongo_uri)
-        self.db = self.client[db_name]
-        self.users = self.db.users
-        self.alerts = self.db.alerts
-        self.users.create_index("email", unique=True)
-        self.alerts.create_index("timestamp")
-
-    def create_user(self, email: str, password_hash: str) -> Dict[str, Any]:
-        user = {
-            "id": str(uuid.uuid4()),
-            "email": email,
-            "password_hash": password_hash,
-            "created_at": dt.datetime.utcnow().isoformat(),
-        }
-        self.users.insert_one(user)
-        return user
-
-    def find_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
-        return self.users.find_one({"email": email}, {"_id": 0})
-
-    def create_alert(self, alert: Dict[str, Any]) -> None:
-        self.alerts.insert_one(alert)
-
-    def get_alerts(self, since: Optional[str] = None) -> List[Dict[str, Any]]:
-        query = {"timestamp": {"$gt": since}} if since else {}
-        cursor = self.alerts.find(query, {"_id": 0}).sort("timestamp", -1)
-        return list(cursor)
-
-
-class CameraManager:
-    def __init__(self, store, clip_dir: Path, config: Dict[str, Any]):
-        self.store = store
-        self.clip_dir = clip_dir
-        self.config = config
-        self.clip_dir.mkdir(parents=True, exist_ok=True)
-        self.running = False
-        self.capture = None
-        self.thread = None
-        self.lock = threading.Lock()
-        self.latest_frame = None
-        self.fps = 0.0
-        self.last_alert_at = 0.0
-        self.model_running = False
-        self.camera_connected = False
-        self.alert_buffer = deque(maxlen=180)  # ~12 sec at ~15fps
-        self.prev_gray = None
-        self.hog = cv2.HOGDescriptor()
-        self.hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
-
-        self.model = YOLO("yolov8n.pt")
-        self.tracker = DeepSort(max_age=30)
-        self.people_data = {}
-        self.alarm_triggered = False
-
-    def play_alarm(self):
-        def _play():
-            try:
-                playsound("alarm.mp3")
-            except:
-                pass
-        threading.Thread(target=_play, daemon=True).start()
-
-    def start(self, video_path: str = None) -> bool:
-        if self.running and getattr(self, 'video_path', None) == video_path:
-            return True
-        elif self.running:
-            self.stop()
-            time.sleep(0.5)
-
-        self.video_path = video_path
-        source = video_path if video_path else self.config.get("CAMERA_SOURCE", "0")
-        source = int(source) if str(source).isdigit() else source
-        self.capture = cv2.VideoCapture(source)
-        self.camera_connected = self.capture.isOpened()
-        if not self.camera_connected:
-            return False
-
-        self.running = True
-        self.model_running = True
-        self.latest_raw_frame = None
-        self.latest_detection = None
-        self.latest_boxes_to_draw = []
-        
-        self.thread = threading.Thread(target=self._loop, daemon=True)
-        self.ai_thread = threading.Thread(target=self._ai_loop, daemon=True)
-        self.thread.start()
-        self.ai_thread.start()
-        return True
-
-    def stop(self) -> None:
-        self.running = False
-        self.model_running = False
-        if self.thread and self.thread.is_alive():
-            self.thread.join(timeout=2)
-        if getattr(self, 'ai_thread', None) and self.ai_thread.is_alive():
-            self.ai_thread.join(timeout=2)
-            
-        if self.capture is not None:
-            self.capture.release()
-        self.capture = None
-        self.camera_connected = False
-
-    def _loop(self) -> None:
-        last = time.time()
-        while self.running and self.capture is not None:
-            ok, frame = self.capture.read()
-            if not ok:
-                if getattr(self, 'video_path', None):
-                    self.capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                    continue
-                time.sleep(0.01)
-                continue
-
-            with self.lock:
-                self.latest_raw_frame = frame.copy()
-
-            now = time.time()
-            delta = max(now - last, 1e-6)
-            self.fps = 0.9 * self.fps + 0.1 * (1.0 / delta) if self.fps else (1.0 / delta)
-            last = now
-
-            frame_to_show = frame.copy()
-            
-            with self.lock:
-                boxes_to_draw = list(getattr(self, 'latest_boxes_to_draw', []))
-                detection = getattr(self, 'latest_detection', None)
-
-            for x1, y1, x2, y2, color, person_id in boxes_to_draw:
-                cv2.rectangle(frame_to_show, (x1, y1), (x2, y2), color, 2)
-                cv2.putText(frame_to_show, f"ID {person_id}", (x1, y1 - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
-
-            if detection:
-                cv2.putText(frame_to_show,
-                            "⚠️ Suspicious Activity Detected",
-                            (50, 50),
-                            cv2.FONT_HERSHEY_SIMPLEX,
-                            1,
-                            (0, 0, 255),
-                            3)
-
-            with self.lock:
-                self.latest_frame = frame_to_show
-                self.alert_buffer.append(frame.copy())
-                
-    def _ai_loop(self) -> None:
-        while self.running:
-            with self.lock:
-                frame = self.latest_raw_frame.copy() if getattr(self, 'latest_raw_frame', None) is not None else None
-                
-            if frame is None:
-                time.sleep(0.02)
-                continue
-                
-            detection, boxes_to_draw = self._detect_suspicious_async(frame)
-            
-            with self.lock:
-                self.latest_detection = detection
-                self.latest_boxes_to_draw = boxes_to_draw
-                
-            if detection:
-                self._handle_detection(frame, detection)
-
-    def _detect_suspicious_async(self, frame):
-        # Async prediction does not block the video reading loop!
-        results = self.model(frame, imgsz=320, verbose=False)[0]
-        detections = []
-        objects = []
-        for box in results.boxes:
-            cls = int(box.cls[0])
-            conf = float(box.conf[0])
-            x1, y1, x2, y2 = map(int, box.xyxy[0])
-            if cls == 0:  # person
-                detections.append(([x1, y1, x2 - x1, y2 - y1], conf, 'person'))
-            else:
-                objects.append((x1, y1, x2, y2))
-
-        tracks = self.tracker.update_tracks(detections, frame=frame)
-        
-        boxes_to_draw = []
-        suspicious_detected = False
-        suspicious_box = None
-
-        for track in tracks:
-            if not track.is_confirmed():
-                continue
-
-            person_id = track.track_id
-            l, t, w, h = map(int, track.to_ltrb())
-            x1, y1, x2, y2 = l, t, l + w, t + h
-
-            if person_id not in self.people_data:
-                self.people_data[person_id] = {
-                    "near_object": False,
-                    "frames": 0,
-                    "suspicious": False
-                }
-
-            person = self.people_data[person_id]
-            person["frames"] += 1
-
-            for ox1, oy1, ox2, oy2 in objects:
-                if abs(x1 - ox1) < 100 and abs(y1 - oy1) < 100:
-                    person["near_object"] = True
-
-            if person["near_object"] and person["frames"] > 20:
-                person["suspicious"] = True
-
-            color = (0, 0, 255) if person["suspicious"] else (0, 255, 0)
-            if person["suspicious"]:
-                suspicious_detected = True
-                suspicious_box = (x1, y1, x2, y2)
-
-            boxes_to_draw.append((x1, y1, x2, y2, color, person_id))
-
-        detection_result = None
-        if suspicious_detected:
-            if not getattr(self, "alarm_triggered", False):
-                self.play_alarm()
-                self.alarm_triggered = True
-
-            detection_result = {
-                "confidence": 0.9,
-                "activity_type": "Suspicious Activity",
-                "severity": "high",
-                "box": suspicious_box if suspicious_box else (0, 0, 0, 0)
-            }
-        else:
-            self.alarm_triggered = False
-
-        return detection_result, boxes_to_draw
-
-    def _handle_detection(self, frame: np.ndarray, detection: Dict[str, Any]) -> None:
-        now = time.time()
-        if now - self.last_alert_at < 10:
-            return
-        self.last_alert_at = now
-
-        alert_id = str(uuid.uuid4())
-        clip_name = f"{alert_id}.mp4"
-        clip_path = self.clip_dir / clip_name
-        self._save_clip(clip_path)
-
-        alert = {
-            "id": alert_id,
-            "timestamp": dt.datetime.utcnow().isoformat(),
-            "confidence": detection["confidence"],
-            "activity_type": detection["activity_type"],
-            "severity": detection["severity"],
-            "clip": clip_name,
-        }
-        self.store.create_alert(alert)
-
-        if alert["severity"] == "high":
-            self._send_email(alert)
-
-    def _save_clip(self, clip_path: Path) -> None:
-        with self.lock:
-            frames = list(self.alert_buffer)
-
-        if not frames:
-            return
-
-        h, w, _ = frames[0].shape
-        writer = cv2.VideoWriter(str(clip_path), cv2.VideoWriter_fourcc(*"mp4v"), 15, (w, h))
-        try:
-            for frame in frames:
-                writer.write(frame)
-        finally:
-            writer.release()
-
-    def _send_email(self, alert: Dict[str, Any]) -> None:
-        host = self.config.get("SMTP_HOST")
-        to_addr = self.config.get("ALERT_EMAIL_TO")
-        if not host or not to_addr:
-            return
-
-        msg = EmailMessage()
-        msg["Subject"] = "VisionGuard High-Risk Alert"
-        msg["From"] = self.config.get("SMTP_USER", "visionguard@localhost")
-        msg["To"] = to_addr
-        msg.set_content(
-            f"High-risk activity detected\n"
-            f"Time: {alert['timestamp']}\n"
-            f"Type: {alert['activity_type']}\n"
-            f"Confidence: {alert['confidence']}\n"
-        )
-
-        port = int(self.config.get("SMTP_PORT", 587))
-        user = self.config.get("SMTP_USER")
-        password = self.config.get("SMTP_PASS")
-
-        try:
-            with smtplib.SMTP(host, port, timeout=10) as server:
-                server.starttls()
-                if user and password:
-                    server.login(user, password)
-                server.send_message(msg)
-        except Exception:
-            # Best-effort notification; avoid crashing detection loop.
-            pass
-
-    def generate_stream(self):
-        while True:
-            if not self.running:
-                time.sleep(0.2)
-                continue
-            with self.lock:
-                frame = None if self.latest_frame is None else self.latest_frame.copy()
-            if frame is None:
-                time.sleep(0.05)
-                continue
-
-            ok, encoded = cv2.imencode(".jpg", frame)
-            if not ok:
-                continue
-            payload = encoded.tobytes()
-            yield (
-                b"--frame\r\n"
-                b"Content-Type: image/jpeg\r\n\r\n" + payload + b"\r\n"
-            )
-
-
-def create_store(config: Dict[str, Any]):
-    mode = config.get("DATA_MODE", "local").lower()
-    if mode == "mongo":
-        try:
-            return MongoStore(config["MONGO_URI"], config["MONGO_DB"])
-        except Exception:
-            pass
-    return LocalStore(Path("storage/db.json"))
-
-
-def create_token(secret: str, expire_hours: int, payload: Dict[str, Any]) -> str:
-    exp = dt.datetime.utcnow() + dt.timedelta(hours=expire_hours)
-    token_data = {**payload, "exp": exp}
-    return jwt.encode(token_data, secret, algorithm="HS256")
-
-
-def decode_token(secret: str, token: str) -> Dict[str, Any]:
-    return jwt.decode(token, secret, algorithms=["HS256"])
-
-
-def create_app() -> Flask:
+from dotenv import load_dotenv
+
+from app.models import db, User, Alert
+from app.inference import TheftDetector
+
+# ─────────────────────────────────────────────────────────────
+#  Global state shared across requests
+# ─────────────────────────────────────────────────────────────
+_camera_lock = threading.Lock()
+_capture: cv2.VideoCapture | None = None
+_camera_thread: threading.Thread | None = None
+_camera_running = False
+_latest_frame: np.ndarray | None = None
+_frame_lock = threading.Lock()
+
+detector = TheftDetector()
+
+
+# ─────────────────────────────────────────────────────────────
+#  App factory
+# ─────────────────────────────────────────────────────────────
+def create_app():
     load_dotenv()
+
     app = Flask(__name__)
 
-    cfg = {
-        "JWT_SECRET": os.getenv("JWT_SECRET", "dev-secret"),
-        "JWT_EXPIRE_HOURS": int(os.getenv("JWT_EXPIRE_HOURS", "24")),
-        "DATA_MODE": os.getenv("DATA_MODE", "local"),
-        "MONGO_URI": os.getenv("MONGO_URI", "mongodb://localhost:27017"),
-        "MONGO_DB": os.getenv("MONGO_DB", "visionguard"),
-        "ALERTS_DIR": os.getenv("ALERTS_DIR", "storage/clips"),
-        "CAMERA_SOURCE": os.getenv("CAMERA_SOURCE", "0"),
-        "SMTP_HOST": os.getenv("SMTP_HOST", ""),
-        "SMTP_PORT": os.getenv("SMTP_PORT", "587"),
-        "SMTP_USER": os.getenv("SMTP_USER", ""),
-        "SMTP_PASS": os.getenv("SMTP_PASS", ""),
-        "ALERT_EMAIL_TO": os.getenv("ALERT_EMAIL_TO", ""),
-    }
+    # ── Config ────────────────────────────────────────────────
+    app.config["SECRET_KEY"] = os.getenv("JWT_SECRET", "change-this-secret")
+    app.config["JWT_EXPIRE_HOURS"] = int(os.getenv("JWT_EXPIRE_HOURS", "24"))
 
-    cors_origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",") if o.strip()]
-    CORS(app, resources={r"/api/*": {"origins": cors_origins if cors_origins != ["*"] else "*"}})
+    db_path = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), "storage", "visionguard.db"
+    )
+    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-    store = create_store(cfg)
-    camera = CameraManager(store, Path(cfg["ALERTS_DIR"]), cfg)
+    cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173")
+    CORS(app, origins=cors_origins.split(","))
 
-    def get_bearer_token() -> Optional[str]:
-        auth_header = request.headers.get("Authorization", "")
-        if auth_header.startswith("Bearer "):
-            return auth_header.split(" ", 1)[1]
-        token = request.args.get("token")
-        return token
+    # ── Database ──────────────────────────────────────────────
+    db.init_app(app)
+    with app.app_context():
+        db.create_all()
 
-    def auth_required(fn):
-        def wrapper(*args, **kwargs):
-            token = get_bearer_token()
-            if not token:
-                return jsonify({"error": "Missing token"}), 401
-            try:
-                user = decode_token(cfg["JWT_SECRET"], token)
-            except Exception:
-                return jsonify({"error": "Invalid token"}), 401
-            request.user = user
-            return fn(*args, **kwargs)
+    # ── Clips directory ───────────────────────────────────────
+    clips_dir = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)),
+        os.getenv("ALERTS_DIR", "storage/clips"),
+    )
+    os.makedirs(clips_dir, exist_ok=True)
+    detector.clips_dir = clips_dir
 
-        wrapper.__name__ = fn.__name__
-        return wrapper
-
-    @app.get("/api/health")
-    def health():
-        return jsonify({"ok": True})
-
-    @app.post("/api/auth/register")
-    def register():
-        payload = request.get_json(force=True, silent=True) or {}
-        email = (payload.get("email") or "").strip().lower()
-        password = payload.get("password") or ""
-        if not email or not password or len(password) < 6:
-            return jsonify({"error": "Email and password (min 6 chars) are required"}), 400
-        try:
-            user = store.create_user(email, generate_password_hash(password))
-        except ValueError as exc:
-            return jsonify({"error": str(exc)}), 409
-        except Exception:
-            return jsonify({"error": "Could not create user"}), 500
-
-        token = create_token(cfg["JWT_SECRET"], cfg["JWT_EXPIRE_HOURS"], {"sub": user["id"], "email": email})
-        return jsonify({"token": token, "user": {"id": user["id"], "email": email}}), 201
-
-    @app.post("/api/auth/login")
-    def login():
-        payload = request.get_json(force=True, silent=True) or {}
-        email = (payload.get("email") or "").strip().lower()
-        password = payload.get("password") or ""
-        user = store.find_user_by_email(email)
-        if not user or not check_password_hash(user["password_hash"], password):
-            return jsonify({"error": "Invalid credentials"}), 401
-        token = create_token(cfg["JWT_SECRET"], cfg["JWT_EXPIRE_HOURS"], {"sub": user["id"], "email": email})
-        return jsonify({"token": token, "user": {"id": user["id"], "email": email}})
-
-    @app.get("/api/alerts")
-    @auth_required
-    def get_alerts():
-        since = request.args.get("since")
-        severity = request.args.get("severity")
-        date = request.args.get("date")
-        alerts = store.get_alerts(since=since)
-        if severity:
-            alerts = [a for a in alerts if a.get("severity") == severity]
-        if date:
-            alerts = [a for a in alerts if a.get("timestamp", "").startswith(date)]
-        return jsonify({"alerts": alerts})
-
-    @app.get("/api/evidence")
-    @auth_required
-    def get_evidence():
-        severity = request.args.get("severity")
-        date = request.args.get("date")
-        alerts = store.get_alerts()
-        if severity:
-            alerts = [a for a in alerts if a.get("severity") == severity]
-        if date:
-            alerts = [a for a in alerts if a.get("timestamp", "").startswith(date)]
-        evidence = [
-            {
-                "id": a["id"],
-                "timestamp": a["timestamp"],
-                "severity": a["severity"],
-                "activity_type": a["activity_type"],
-                "confidence": a["confidence"],
-                "clip": a.get("clip"),
-                "download_url": f"/api/evidence/{a.get('clip')}" if a.get("clip") else None,
-            }
-            for a in alerts
-        ]
-        return jsonify({"evidence": evidence})
-
-    @app.get("/api/evidence/<path:clip_name>")
-    @auth_required
-    def download_evidence(clip_name: str):
-        as_download = request.args.get("download") == "1"
-        return send_from_directory(camera.clip_dir, clip_name, as_attachment=as_download)
-
-    @app.get("/api/analytics")
-    @auth_required
-    def analytics():
-        alerts = store.get_alerts()
-        per_day = defaultdict(int)
-        distribution = Counter()
-        confidences = []
-
-        for alert in alerts:
-            day = alert["timestamp"][:10]
-            per_day[day] += 1
-            distribution[alert["activity_type"]] += 1
-            confidences.append(float(alert["confidence"]))
-
-        line_data = [{"date": day, "count": per_day[day]} for day in sorted(per_day)]
-        pie_data = [{"name": name, "value": value} for name, value in distribution.items()]
-        accuracy = round((sum(confidences) / len(confidences) * 100), 2) if confidences else 0
-
-        return jsonify({
-            "alerts_per_day": line_data,
-            "threat_distribution": pie_data,
-            "detection_accuracy": accuracy,
-            "total_alerts": len(alerts),
-        })
-
-    @app.post("/api/start-camera")
-    @auth_required
-    def start_camera():
-        started = camera.start()
-        if not started:
-            return jsonify({"error": "Failed to connect to camera"}), 500
-        return jsonify({"status": "running"})
-
-    @app.post("/api/stop-camera")
-    @auth_required
-    def stop_camera():
-        camera.stop()
-        return jsonify({"status": "stopped"})
-
-    @app.get("/api/system-status")
-    @auth_required
-    def system_status():
-        alerts = store.get_alerts()
-        today = dt.datetime.utcnow().date().isoformat()
-        today_count = sum(1 for a in alerts if a.get("timestamp", "").startswith(today))
-        return jsonify(
-            {
-                "camera_connected": camera.camera_connected,
-                "model_running": camera.model_running,
-                "processing_fps": round(camera.fps, 2),
-                "total_alerts_today": today_count,
-            }
-        )
-
-    @app.get("/api/video-feed")
-    @auth_required
-    def video_feed():
-        return Response(camera.generate_stream(), mimetype="multipart/x-mixed-replace; boundary=frame")
-
-    @app.post("/api/upload-video")
-    @auth_required
-    def upload_video():
-        if "file" not in request.files:
-            return jsonify({"error": "No file part"}), 400
-        
-        file = request.files["file"]
-        if file.filename == "":
-            return jsonify({"error": "No selected file"}), 400
-            
-        if file:
-            upload_dir = Path("storage/uploads")
-            upload_dir.mkdir(parents=True, exist_ok=True)
-            file_path = upload_dir / "demo_video.mp4"
-            file.save(str(file_path))
-            
-            started = camera.start(video_path=str(file_path))
-            if not started:
-                return jsonify({"error": "Failed to connect to video file"}), 500
-                
-            return jsonify({"status": "running", "message": "Video successfully loaded"})
+    # ── Register routes ───────────────────────────────────────
+    _register_routes(app)
 
     return app
 
 
+# ─────────────────────────────────────────────────────────────
+#  JWT helpers
+# ─────────────────────────────────────────────────────────────
+def _encode_token(user_id: int, secret: str, hours: int) -> str:
+    payload = {
+        "sub": str(user_id),
+        "exp": datetime.datetime.now(datetime.timezone.utc)
+        + datetime.timedelta(hours=hours),
+    }
+    return jwt.encode(payload, secret, algorithm="HS256")
 
 
-if __name__ == "__main__":
-    app = create_app()
-    host = os.getenv("FLASK_HOST", "0.0.0.0")
-    port = int(os.getenv("FLASK_PORT", "5001"))
-    app.run(host=host, port=port, debug=os.getenv("FLASK_ENV") == "development", threaded=True)
+def _decode_token(token: str, secret: str) -> dict | None:
+    try:
+        return jwt.decode(token, secret, algorithms=["HS256"])
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+        return None
+
+
+def _token_required(f):
+    """Decorator — pulls the JWT from Authorization header or ?token= query."""
+
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        from flask import current_app
+
+        secret = current_app.config["SECRET_KEY"]
+
+        token = None
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+        else:
+            token = request.args.get("token")
+
+        if not token:
+            return jsonify({"error": "Authentication required"}), 401
+
+        payload = _decode_token(token, secret)
+        if not payload:
+            return jsonify({"error": "Invalid or expired token"}), 401
+
+        request.user_id = payload["sub"]
+        return f(*args, **kwargs)
+
+    return wrapper
+
+
+# ─────────────────────────────────────────────────────────────
+#  Camera / video capture thread
+# ─────────────────────────────────────────────────────────────
+def _camera_loop(source, app):
+    """
+    Background thread: reads frames, runs detector, and stores
+    the latest annotated frame for MJPEG streaming.
+    """
+    global _capture, _camera_running, _latest_frame
+
+    cap = cv2.VideoCapture(source)
+    if not cap.isOpened():
+        print(f"[Server] ✗ Cannot open video source: {source}")
+        _camera_running = False
+        return
+
+    fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
+    print(f"[Server] ✔ Video source opened  (FPS={fps:.1f})")
+
+    with _camera_lock:
+        _capture = cap
+
+    _camera_running = True
+
+    while _camera_running:
+        ret, frame = cap.read()
+        if not ret:
+            # If reading a file, loop back to start
+            if isinstance(source, str):
+                cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                continue
+            break
+
+        annotated = detector.process_frame(frame, fps=fps)
+
+        with _frame_lock:
+            _latest_frame = annotated
+
+        # Flush pending alerts to DB
+        pending = detector.pop_pending_alerts()
+        if pending:
+            with app.app_context():
+                for a in pending:
+                    alert = Alert(
+                        activity_type=a["activity_type"],
+                        confidence=a["confidence"],
+                        severity=a["severity"],
+                        clip_filename=a.get("clip_filename"),
+                    )
+                    db.session.add(alert)
+                db.session.commit()
+
+        # Throttle to ~30 FPS max to avoid CPU burn
+        time.sleep(max(0, 1.0 / 30.0 - 0.001))
+
+    cap.release()
+    with _camera_lock:
+        _capture = None
+    _camera_running = False
+    print("[Server] Camera thread stopped")
+
+
+def _start_source(source, app):
+    """Start the camera thread with the given source (int or filepath)."""
+    global _camera_thread, _camera_running
+
+    _stop_source()
+
+    detector.reset()
+    _camera_running = True
+    _camera_thread = threading.Thread(
+        target=_camera_loop, args=(source, app), daemon=True
+    )
+    _camera_thread.start()
+
+    # Wait briefly for the thread to initialize
+    time.sleep(1.0)
+    return _camera_running
+
+
+def _stop_source():
+    """Stop the camera thread."""
+    global _camera_running, _camera_thread, _latest_frame
+
+    _camera_running = False
+    if _camera_thread and _camera_thread.is_alive():
+        _camera_thread.join(timeout=3.0)
+    _camera_thread = None
+
+    with _frame_lock:
+        _latest_frame = None
+
+
+# ─────────────────────────────────────────────────────────────
+#  MJPEG generator
+# ─────────────────────────────────────────────────────────────
+def _generate_mjpeg():
+    """Yield MJPEG frames for the live-feed <img> tag."""
+    while True:
+        with _frame_lock:
+            frame = _latest_frame
+
+        if frame is None:
+            # Send a blank frame while waiting
+            blank = np.zeros((360, 640, 3), dtype=np.uint8)
+            cv2.putText(
+                blank, "Waiting for frames...", (160, 185),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (100, 100, 100), 2,
+            )
+            _, buf = cv2.imencode(".jpg", blank)
+        else:
+            _, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 75])
+
+        yield (
+            b"--frame\r\n"
+            b"Content-Type: image/jpeg\r\n\r\n" + buf.tobytes() + b"\r\n"
+        )
+        time.sleep(1.0 / 25)
+
+
+# ─────────────────────────────────────────────────────────────
+#  Route registration
+# ─────────────────────────────────────────────────────────────
+def _register_routes(app):
+
+    # ── Auth ──────────────────────────────────────────────────
+
+    @app.route("/api/auth/register", methods=["POST"])
+    def auth_register():
+        data = request.get_json(silent=True) or {}
+        email = data.get("email", "").strip()
+        password = data.get("password", "")
+
+        if not email or not password:
+            return jsonify({"error": "Email and password required"}), 400
+        if len(password) < 4:
+            return jsonify({"error": "Password must be at least 4 characters"}), 400
+
+        if User.query.filter_by(email=email).first():
+            return jsonify({"error": "Email already registered"}), 409
+
+        pw_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+        user = User(email=email, password_hash=pw_hash)
+        db.session.add(user)
+        db.session.commit()
+
+        token = _encode_token(
+            user.id, app.config["SECRET_KEY"], app.config["JWT_EXPIRE_HOURS"]
+        )
+        return jsonify({"token": token, "user": user.to_dict()}), 201
+
+    @app.route("/api/auth/login", methods=["POST"])
+    def auth_login():
+        data = request.get_json(silent=True) or {}
+        email = data.get("email", "").strip()
+        password = data.get("password", "")
+
+        user = User.query.filter_by(email=email).first()
+        if not user or not bcrypt.checkpw(
+            password.encode(), user.password_hash.encode()
+        ):
+            return jsonify({"error": "Invalid credentials"}), 401
+
+        token = _encode_token(
+            user.id, app.config["SECRET_KEY"], app.config["JWT_EXPIRE_HOURS"]
+        )
+        return jsonify({"token": token, "user": user.to_dict()})
+
+    # ── Video feed ────────────────────────────────────────────
+
+    @app.route("/api/video-feed")
+    @_token_required
+    def video_feed():
+        return Response(
+            _generate_mjpeg(),
+            mimetype="multipart/x-mixed-replace; boundary=frame",
+        )
+
+    # ── Camera controls ───────────────────────────────────────
+
+    @app.route("/api/start-camera", methods=["POST"])
+    @_token_required
+    def start_camera():
+        source_raw = os.getenv("CAMERA_SOURCE", "0")
+        try:
+            source = int(source_raw)
+        except ValueError:
+            source = source_raw
+
+        ok = _start_source(source, app)
+        if ok:
+            return jsonify({"message": "Camera started"})
+        return jsonify({"error": "Failed to open camera"}), 500
+
+    @app.route("/api/stop-camera", methods=["POST"])
+    @_token_required
+    def stop_camera():
+        _stop_source()
+        return jsonify({"message": "Camera stopped"})
+
+    @app.route("/api/upload-video", methods=["POST"])
+    @_token_required
+    def upload_video():
+        if "file" not in request.files:
+            return jsonify({"error": "No file provided"}), 400
+
+        file = request.files["file"]
+        if not file.filename:
+            return jsonify({"error": "Empty filename"}), 400
+
+        uploads_dir = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "storage", "uploads"
+        )
+        os.makedirs(uploads_dir, exist_ok=True)
+        save_path = os.path.join(uploads_dir, file.filename)
+        file.save(save_path)
+
+        ok = _start_source(save_path, app)
+        if ok:
+            return jsonify({"message": f"Demo video loaded: {file.filename}"})
+        return jsonify({"error": "Failed to open video file"}), 500
+
+    # ── System status ─────────────────────────────────────────
+
+    @app.route("/api/system-status")
+    @_token_required
+    def system_status():
+        today_start = datetime.datetime.now(datetime.timezone.utc).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        total_today = Alert.query.filter(Alert.timestamp >= today_start).count()
+
+        return jsonify(
+            {
+                "camera_connected": _camera_running,
+                "model_running": _camera_running and detector.model_loaded,
+                "processing_fps": detector.processing_fps if _camera_running else 0,
+                "total_alerts_today": total_today,
+            }
+        )
+
+    # ── Alerts ────────────────────────────────────────────────
+
+    @app.route("/api/alerts")
+    @_token_required
+    def get_alerts():
+        since = request.args.get("since")
+        query = Alert.query.order_by(Alert.timestamp.desc())
+
+        if since:
+            try:
+                since_dt = datetime.datetime.fromisoformat(
+                    since.replace("Z", "+00:00")
+                )
+                query = query.filter(Alert.timestamp > since_dt)
+            except ValueError:
+                pass
+
+        alerts = query.limit(50).all()
+        return jsonify({"alerts": [a.to_dict() for a in alerts]})
+
+    # ── Evidence ──────────────────────────────────────────────
+
+    @app.route("/api/evidence")
+    @_token_required
+    def get_evidence():
+        severity = request.args.get("severity")
+        date_str = request.args.get("date")
+
+        query = Alert.query.filter(Alert.clip_filename.isnot(None)).order_by(
+            Alert.timestamp.desc()
+        )
+
+        if severity:
+            query = query.filter_by(severity=severity)
+
+        if date_str:
+            try:
+                date_obj = datetime.date.fromisoformat(date_str)
+                start = datetime.datetime.combine(
+                    date_obj, datetime.time.min, tzinfo=datetime.timezone.utc
+                )
+                end = datetime.datetime.combine(
+                    date_obj, datetime.time.max, tzinfo=datetime.timezone.utc
+                )
+                query = query.filter(Alert.timestamp.between(start, end))
+            except ValueError:
+                pass
+
+        evidence = query.limit(100).all()
+        return jsonify({"evidence": [a.to_dict() for a in evidence]})
+
+    @app.route("/api/evidence/<path:filename>")
+    @_token_required
+    def serve_evidence(filename):
+        clips_dir = detector.clips_dir
+        as_download = request.args.get("download") == "1"
+        return send_from_directory(
+            clips_dir,
+            filename,
+            as_attachment=as_download,
+        )
+
+    # ── Analytics ─────────────────────────────────────────────
+
+    @app.route("/api/analytics")
+    @_token_required
+    def get_analytics():
+        total_alerts = Alert.query.count()
+
+        # Alerts per day (last 14 days)
+        alerts_per_day = []
+        today = datetime.date.today()
+        for i in range(13, -1, -1):
+            d = today - datetime.timedelta(days=i)
+            start = datetime.datetime.combine(
+                d, datetime.time.min, tzinfo=datetime.timezone.utc
+            )
+            end = datetime.datetime.combine(
+                d, datetime.time.max, tzinfo=datetime.timezone.utc
+            )
+            count = Alert.query.filter(Alert.timestamp.between(start, end)).count()
+            alerts_per_day.append({"date": d.isoformat(), "count": count})
+
+        # Threat distribution
+        shoplifting_count = Alert.query.filter_by(
+            activity_type="Shoplifting"
+        ).count()
+        other_count = total_alerts - shoplifting_count
+        threat_distribution = [
+            {"name": "Shoplifting", "value": shoplifting_count},
+        ]
+        if other_count > 0:
+            threat_distribution.append({"name": "Other", "value": other_count})
+
+        # Detection accuracy — average confidence of all alerts
+        from sqlalchemy import func
+
+        avg_conf = (
+            db.session.query(func.avg(Alert.confidence)).scalar() or 0.0
+        )
+        detection_accuracy = round(float(avg_conf) * 100, 1)
+
+        return jsonify(
+            {
+                "total_alerts": total_alerts,
+                "detection_accuracy": detection_accuracy,
+                "alerts_per_day": alerts_per_day,
+                "threat_distribution": threat_distribution,
+            }
+        )
