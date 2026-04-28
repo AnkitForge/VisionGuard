@@ -30,6 +30,7 @@ from flask import (
 )
 from flask_cors import CORS
 from dotenv import load_dotenv
+from supabase import create_client, Client
 
 from app.models import db, User, Alert
 from app.inference import TheftDetector
@@ -59,11 +60,28 @@ def create_app():
     app.config["SECRET_KEY"] = os.getenv("JWT_SECRET", "change-this-secret")
     app.config["JWT_EXPIRE_HOURS"] = int(os.getenv("JWT_EXPIRE_HOURS", "24"))
 
-    db_path = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)), "storage", "visionguard.db"
-    )
-    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
+    # ── Database ──────────────────────────────────────────────
+    # Prefer Supabase Postgres if provided, otherwise fallback to local SQLite
+    supabase_db_url = os.getenv("SUPABASE_DB_URL")
+    if supabase_db_url:
+        app.config["SQLALCHEMY_DATABASE_URI"] = supabase_db_url
+    else:
+        db_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "storage", "visionguard.db"
+        )
+        app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
+    
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+    # ── Supabase Client ───────────────────────────────────────
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_KEY")
+    if supabase_url and supabase_key:
+        app.supabase: Client = create_client(supabase_url, supabase_key)
+        detector.supabase = app.supabase
+    else:
+        app.supabase = None
+        print("[WARNING] Supabase credentials not found. Cloud storage disabled.")
 
     cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173")
     CORS(app, origins=cors_origins.split(","))
