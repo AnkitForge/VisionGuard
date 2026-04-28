@@ -160,35 +160,60 @@ def _camera_loop(source, app):
     _camera_running = True
 
     while _camera_running:
-        ret, frame = cap.read()
-        if not ret:
-            # If reading a file, loop back to start
-            if isinstance(source, str):
-                cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        try:
+            ret, frame = cap.read()
+            if not ret:
+                # If reading a file, loop back to start
+                if isinstance(source, (str, bytes)):
+                    print(f"[Server] Video reached end, looping: {source}")
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                    # Some codecs might fail to seek, so re-open if needed
+                    ret, frame = cap.read()
+                    if not ret:
+                        print("[Server] Seek failed, re-opening video source")
+                        cap.release()
+                        cap = cv2.VideoCapture(source)
+                        ret, frame = cap.read()
+                        if not ret:
+                            print("[Server] Failed to re-open video. Stopping.")
+                            break
+                else:
+                    break
+
+            if frame is None:
                 continue
-            break
 
-        annotated = detector.process_frame(frame, fps=fps)
+            try:
+                annotated = detector.process_frame(frame, fps=fps)
+            except Exception as e:
+                print(f"[ERROR] Inference failed: {e}")
+                annotated = frame # Fallback to raw frame
 
-        with _frame_lock:
-            _latest_frame = annotated
+            with _frame_lock:
+                _latest_frame = annotated
 
-        # Flush pending alerts to DB
-        pending = detector.pop_pending_alerts()
-        if pending:
-            with app.app_context():
-                for a in pending:
-                    alert = Alert(
-                        activity_type=a["activity_type"],
-                        confidence=a["confidence"],
-                        severity=a["severity"],
-                        clip_filename=a.get("clip_filename"),
-                    )
-                    db.session.add(alert)
-                db.session.commit()
+            # Flush pending alerts to DB
+            try:
+                pending = detector.pop_pending_alerts()
+                if pending:
+                    with app.app_context():
+                        for a in pending:
+                            alert = Alert(
+                                activity_type=a["activity_type"],
+                                confidence=a["confidence"],
+                                severity=a["severity"],
+                                clip_filename=a.get("clip_filename"),
+                            )
+                            db.session.add(alert)
+                        db.session.commit()
+            except Exception as e:
+                print(f"[ERROR] Alert saving failed: {e}")
 
-        # Throttle to ~30 FPS max to avoid CPU burn
-        time.sleep(max(0, 1.0 / 30.0 - 0.001))
+            # Throttle to ~30 FPS max to avoid CPU burn
+            time.sleep(max(0.001, 1.0 / 30.0))
+        except Exception as e:
+            print(f"[ERROR] Camera loop iteration failed: {e}")
+            time.sleep(0.1)
 
     cap.release()
     with _camera_lock:
@@ -439,6 +464,45 @@ def _register_routes(app):
         )
 
     # ── Analytics ─────────────────────────────────────────────
+
+    @app.route("/api/alerts/<int:alert_id>", methods=["DELETE"])
+    @_token_required
+    def delete_alert(alert_id):
+        alert = Alert.query.get(alert_id)
+        if not alert:
+            return jsonify({"error": "Alert not found"}), 404
+
+        # Delete associated clip file if it exists
+        if alert.clip_filename:
+            clip_path = os.path.join(detector.clips_dir, alert.clip_filename)
+            if os.path.exists(clip_path):
+                try:
+                    os.remove(clip_path)
+                except Exception as e:
+                    print(f"[ERROR] Failed to delete clip file: {e}")
+
+        db.session.delete(alert)
+        db.session.commit()
+        return jsonify({"message": "Alert and associated clip deleted"})
+
+    @app.route("/api/alerts/all", methods=["DELETE"])
+    @_token_required
+    def delete_all_alerts():
+        # Optional: also delete all files in clips_dir
+        for filename in os.listdir(detector.clips_dir):
+            if filename.endswith(".mp4"):
+                try:
+                    os.remove(os.path.join(detector.clips_dir, filename))
+                except Exception as e:
+                    print(f"[ERROR] Failed to delete file {filename}: {e}")
+
+        try:
+            db.session.query(Alert).delete()
+            db.session.commit()
+            return jsonify({"message": "All alerts and clips cleared"})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"error": str(e)}), 500
 
     @app.route("/api/analytics")
     @_token_required

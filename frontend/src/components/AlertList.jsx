@@ -1,4 +1,4 @@
-function AlertList({ alerts }) {
+function AlertList({ alerts, onDelete }) {
   return (
     <section className="glass rounded-2xl p-4">
       <h3 className="mb-3 text-lg font-semibold">Recent Alerts</h3>
@@ -11,11 +11,24 @@ function AlertList({ alerts }) {
               alert.severity === 'high' ? 'border-rose-500/40 bg-rose-500/10' : 'border-amber-500/30 bg-amber-500/10'
             }`}
           >
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-medium">{alert.activity_type}</p>
-              <span className="text-xs text-slate-300">{(alert.confidence * 100).toFixed(0)}%</span>
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium">{alert.activity_type}</p>
+                  <span className="text-xs text-slate-300">{(alert.confidence * 100).toFixed(0)}%</span>
+                </div>
+                <p className="text-xs text-slate-400">{new Date(alert.timestamp).toLocaleString()}</p>
+              </div>
+              {onDelete && (
+                <button
+                  onClick={() => onDelete(alert.id)}
+                  className="rounded-lg p-1 text-slate-400 hover:bg-white/10 hover:text-rose-400"
+                  title="Delete Alert"
+                >
+                  ✕
+                </button>
+              )}
             </div>
-            <p className="text-xs text-slate-400">{new Date(alert.timestamp).toLocaleString()}</p>
           </div>
         ))}
       </div>

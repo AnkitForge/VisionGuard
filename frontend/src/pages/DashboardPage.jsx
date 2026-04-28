@@ -117,6 +117,16 @@ function DashboardPage() {
     }
   }
 
+  const deleteAlert = async (id) => {
+    try {
+      await api.delete(`/alerts/${id}`)
+      setAlerts((prev) => prev.filter((a) => a.id !== id))
+      toast.success('Alert deleted')
+    } catch {
+      toast.error('Failed to delete alert')
+    }
+  }
+
   useEffect(() => {
     loadInitial()
   }, [])
@@ -145,11 +155,11 @@ function DashboardPage() {
       {loading ? <LoadingSpinner label="Loading dashboard..." /> : null}
 
       <div className="grid gap-4 xl:grid-cols-[2fr_1fr]">
-        <LiveFeed cameraRunning={status.camera_connected && status.model_running} />
+        <LiveFeed cameraRunning={status.camera_connected} />
         <StatusPanel status={status} />
       </div>
 
-      <AlertList alerts={alerts} />
+      <AlertList alerts={alerts} onDelete={deleteAlert} />
     </div>
   )
 }

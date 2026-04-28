@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { API_BASE_URL, api } from '../services/api'
+import { useAuth } from '../context/AuthContext'
 import LoadingSpinner from '../components/LoadingSpinner'
 
 function EvidencePage() {
@@ -21,11 +22,22 @@ function EvidencePage() {
     }
   }
 
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this evidence?')) return
+    try {
+      await api.delete(`/alerts/${id}`)
+      toast.success('Evidence deleted')
+      setEvidence((prev) => prev.filter((item) => item.id !== id))
+    } catch (err) {
+      toast.error('Failed to delete evidence')
+    }
+  }
+
   useEffect(() => {
     fetchEvidence()
   }, [severity, date])
 
-  const token = useMemo(() => localStorage.getItem('vg_token'), [])
+  const { token } = useAuth()
 
   return (
     <div className="space-y-4">
@@ -53,9 +65,14 @@ function EvidencePage() {
             {item.clip ? (
               <div className="mt-3 space-y-2">
                 <video controls className="w-full rounded-lg border border-white/10" src={`${API_BASE_URL}/api/evidence/${item.clip}?token=${token}`} />
-                <a className="inline-block rounded-lg bg-cyan-500 px-3 py-2 text-sm font-semibold text-slate-900" href={`${API_BASE_URL}${item.download_url}?token=${token}&download=1`}>
-                  Download Clip
-                </a>
+                <div className="flex gap-2">
+                  <a className="flex-1 rounded-lg bg-cyan-500 px-3 py-2 text-center text-sm font-semibold text-slate-900" href={`${API_BASE_URL}${item.download_url}?token=${token}&download=1`}>
+                    Download
+                  </a>
+                  <button onClick={() => handleDelete(item.id)} className="rounded-lg bg-rose-500/20 px-3 py-2 text-sm font-semibold text-rose-300 hover:bg-rose-500/30">
+                    Delete
+                  </button>
+                </div>
               </div>
             ) : null}
           </article>

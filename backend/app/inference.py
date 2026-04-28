@@ -89,17 +89,23 @@ class TheftDetector:
         if self._model is not None:
             return
         with self._model_lock:
-            if self._model is not None:
+            if self._model is not None or getattr(self, "_model_load_failed", False):
                 return
             import tensorflow as tf
 
             model_path = os.path.join(MODEL1_DIR, "lrcn_theft_model.keras")
             if not os.path.exists(model_path):
-                print(f"[ERROR] Model not found: {model_path}")
+                print(f"[ERROR] Model not found at {model_path}. Detection will be disabled.")
+                self._model_load_failed = True
                 return
-            print(f"[TheftDetector] Loading model from {model_path} …")
-            self._model = tf.keras.models.load_model(model_path)
-            print("[TheftDetector] ✔ Model loaded successfully")
+
+            try:
+                print(f"[TheftDetector] Loading model from {model_path} …")
+                self._model = tf.keras.models.load_model(model_path)
+                print("[TheftDetector] ✔ Model loaded successfully")
+            except Exception as e:
+                print(f"[ERROR] Failed to load model: {e}")
+                self._model_load_failed = True
 
     @property
     def model_loaded(self):
@@ -126,16 +132,20 @@ class TheftDetector:
         # Motion highlighting via frame differencing
         diffed = apply_frame_diff(frames)
 
-        # Pad or sample to SEQUENCE_LEN
+        # Pad or sample to exactly SEQUENCE_LEN
         if len(diffed) >= SEQUENCE_LEN:
             idxs = np.linspace(0, len(diffed) - 1, SEQUENCE_LEN, dtype=int)
-            diffed = [diffed[i] for i in idxs]
+            final_seq = [diffed[i] for i in idxs]
         else:
-            while len(diffed) < SEQUENCE_LEN:
-                diffed.append(diffed[-1])
+            final_seq = list(diffed)
+            while len(final_seq) < SEQUENCE_LEN:
+                final_seq.append(final_seq[-1] if final_seq else np.zeros((FRAME_HEIGHT, FRAME_WIDTH), dtype=np.float32))
 
-        arr = np.array(diffed, dtype=np.float32)[..., np.newaxis]  # (seq, H, W, 1)
-        return arr[np.newaxis, ...]                                  # (1, seq, H, W, 1)
+        # Ensure correct shape: (1, SEQUENCE_LEN, H, W, 1)
+        arr = np.array(final_seq, dtype=np.float32) # (20, 64, 64)
+        arr = np.expand_dims(arr, axis=-1)          # (20, 64, 64, 1)
+        arr = np.expand_dims(arr, axis=0)           # (1, 20, 64, 64, 1)
+        return arr
 
     # ─────────────────────────────────────────────────────────
     #  Frame annotation
@@ -198,7 +208,8 @@ class TheftDetector:
         ts = _dt.datetime.now().strftime("%Y%m%d_%H%M%S")
         self._clip_filename = f"theft_{ts}.mp4"
         path = os.path.join(self.clips_dir, self._clip_filename)
-        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        # Use 'avc1' (H.264) for better browser compatibility
+        fourcc = cv2.VideoWriter_fourcc(*"avc1")
         self._clip_writer = cv2.VideoWriter(path, fourcc, fps, (width, height))
         self._clip_max_frames = int(fps * CLIP_DURATION_SECONDS)
         self._clip_frames_written = 0
@@ -256,12 +267,18 @@ class TheftDetector:
         ):
             seq = self._build_sequence()
             if seq is not None:
-                probs = self._model.predict(seq, verbose=0)[0]
-                idx = int(np.argmax(probs))
-                self.current_label = CLASS_NAMES[idx]
-                self.current_confidence = float(probs[idx]) * 100
-                self.current_probs = probs
-                self._frames_since_predict = 0
+                try:
+                    # Model prediction
+                    probs = self._model.predict(seq, verbose=0)[0]
+                    idx = int(np.argmax(probs))
+                    self.current_label = CLASS_NAMES[idx]
+                    self.current_confidence = float(probs[idx]) * 100
+                    self.current_probs = probs
+                    self._frames_since_predict = 0
+                except Exception as e:
+                    print(f"[ERROR] Model prediction failed: {e}")
+                    self.current_label = "Error"
+                    self._frames_since_predict = 0
 
                 # Alert logic
                 if (
