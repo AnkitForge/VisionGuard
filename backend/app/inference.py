@@ -228,33 +228,11 @@ class TheftDetector:
             self._stop_clip()
 
     def _stop_clip(self):
-        """Finish recording the evidence clip and optionally upload to Supabase."""
+        """Finish recording the evidence clip."""
         if self._clip_writer is not None:
             self._clip_writer.release()
             self._clip_writer = None
-            print(f"[TheftDetector] ✔ Evidence clip saved locally: {self._clip_filename}")
-
-            # Upload to Supabase Storage if available
-            if self.supabase and self._clip_filename:
-                try:
-                    local_path = os.path.join(self.clips_dir, self._clip_filename)
-                    with open(local_path, "rb") as f:
-                        self.supabase.storage.from_("evidence").upload(
-                            path=self._clip_filename,
-                            file=f,
-                            file_options={"content-type": "video/mp4"}
-                        )
-                    
-                    # Get public URL
-                    public_url = self.supabase.storage.from_("evidence").get_public_url(self._clip_filename)
-                    print(f"[TheftDetector] ☁ Uploaded to Supabase: {public_url}")
-                    
-                    # Store public URL in the alert data (to be picked up by server.py)
-                    # We can replace the filename with the full URL
-                    # but server.py expects filename. Let's keep it as is,
-                    # but maybe we'll change how it's saved.
-                except Exception as e:
-                    print(f"[ERROR] Supabase upload failed: {e}")
+            print(f"[TheftDetector] ✔ Evidence clip saved: {self._clip_filename}")
 
     # ─────────────────────────────────────────────────────────
     #  Main processing entry point

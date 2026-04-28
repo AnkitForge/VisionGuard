@@ -13,5 +13,4 @@ deep-sort-realtime
 playsound==1.2.2
 tensorflow==2.17.0
 termcolor==2.3.0
-supabase==2.13.0
 bcrypt==4.2.1

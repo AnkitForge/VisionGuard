@@ -39,17 +39,6 @@ class Alert(db.Model):
     clip_filename = db.Column(db.String(255), nullable=True)
 
     def to_dict(self):
-        import os
-        supabase_url = os.getenv("SUPABASE_URL")
-        
-        download_url = None
-        if self.clip_filename:
-            if supabase_url:
-                # Construct Supabase public URL
-                download_url = f"{supabase_url}/storage/v1/object/public/evidence/{self.clip_filename}"
-            else:
-                download_url = f"/api/evidence/{self.clip_filename}"
-
         return {
             "id": self.id,
             "activity_type": self.activity_type,
@@ -57,5 +46,7 @@ class Alert(db.Model):
             "severity": self.severity,
             "timestamp": self.timestamp.isoformat() + "Z" if self.timestamp else None,
             "clip": self.clip_filename,
-            "download_url": download_url,
+            "download_url": f"/api/evidence/{self.clip_filename}"
+            if self.clip_filename
+            else None,
         }
