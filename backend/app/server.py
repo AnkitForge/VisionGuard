@@ -125,10 +125,16 @@ def create_app():
     app.config["SECRET_KEY"] = os.getenv("JWT_SECRET", "change-this-secret")
     app.config["JWT_EXPIRE_HOURS"] = int(os.getenv("JWT_EXPIRE_HOURS", "24"))
 
-    db_path = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)), "storage", "visionguard.db"
-    )
-    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
+    db_url = os.getenv("DATABASE_URL")
+    if db_url:
+        if db_url.startswith("postgres://"):
+            db_url = db_url.replace("postgres://", "postgresql://", 1)
+        app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+    else:
+        db_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "storage", "visionguard.db"
+        )
+        app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:5174")
